@@ -1,5 +1,9 @@
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import numpy as np
+from plot_confusion import plot_confusion_matrix
 
 
 # Define file paths (move one directory up)
@@ -33,7 +37,7 @@ def classify_text(text):
 chunk_size = 10000  # Adjust based on memory constraints
 chunks = []
 for chunk in pd.read_csv(input_csv_file, chunksize=chunk_size):
-    if "text" in chunk.columns:  # Replace with the actual column name
+    if "text" in chunk.columns:  
         chunk["classification"] = chunk["text"].apply(classify_text)
         chunks.append(chunk)
 
@@ -45,24 +49,31 @@ df_result.to_csv(output_csv_file, index=False)
 print("Classification completed. First few rows of output:")
 print(df_result.head())
 
-if "suicide" or "non-suicide" in df_result.columns:  # Replace with the actual name of the classification column
-    # Compare the new "Label" column with the pre-existing "X or not X" column
-    correct_matches = (df_result["class"] == df_result["classification"]).sum()
-    incorrect_matches = (df_result["class"] != df_result["classification"]).sum()
 
-    # Calculate False Positives and False Negatives
-    false_positives = ((df_result["classification"] == "suicide") & (df_result["class"] == "non-suicide")).sum()
-    false_negatives = ((df_result["classification"] == "non-suicide") & (df_result["class"] == "suicide")).sum()
+TP = ((df_result["classification"] == "suicide") & (df_result["class"] == "suicide")).sum()
+FP = ((df_result["classification"] == "suicide") & (df_result["class"] == "non-suicide")).sum()
+TN = ((df_result["classification"] == "non-suicide") & (df_result["class"] == "non-suicide")).sum()
+FN = ((df_result["classification"] == "non-suicide") & (df_result["class"] == "suicide")).sum()
 
-    total_rows = len(df_result)
-    false_positive_percentage = (false_positives / total_rows) * 100
-    false_negative_percentage = (false_negatives / total_rows) * 100
-    #accuracy = (correct_matches / total_rows) * 100
-    
-    # Print the comparison report
-    print("\n📝 **Comparison Report**")
-    print(f"✅ Number of correct matches: {correct_matches}")
-    print(f"❌ Number of incorrect matches: {incorrect_matches}")
-    print(f"✅ Accuracy (correct matches / total): {correct_matches / len(df_result):.4f}")
-    print(f"❌ False Positives (FP): {false_positive_percentage}")
-    print(f"❌ False Negatives (FN): {false_negative_percentage}")
+# Calculate Sensitivity (Recall), Specificity, PPV, and NPV
+sensitivity = TP / (TP + FN) if (TP + FN) > 0 else 0
+specificity = TN / (TN + FP) if (TN + FP) > 0 else 0
+ppv = TP / (TP + FP) if (TP + FP) > 0 else 0
+npv = TN / (TN + FN) if (TN + FN) > 0 else 0
+
+# Print the metrics
+print("\nPerformance Metrics**")
+print(f"Sensitivity (Recall): {sensitivity:.4f}")
+print(f"Specificity: {specificity:.4f}")
+print(f"Positive Predictive Value (PPV): {ppv:.4f}")
+print(f"Negative Predictive Value (NPV): {npv:.4f}")
+
+accuracy = (TP + TN) / (TP + TN + FP + FN)
+print(f"Accuracy: {accuracy:.4f}")
+
+
+y_true = df_result['class']
+y_pred = df_result['classification']
+
+plot_confusion_matrix(y_true, y_pred)
+
