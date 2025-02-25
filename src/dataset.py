@@ -5,10 +5,10 @@ import torch
 from torch.utils.data import Dataset
 
 
-class CharCorruptionDataset(Dataset):
+class CrisisDataset(Dataset):
     def __init__(self, data, block_size):
-        self.MASK_CHAR = "\u2047" # the doublequestionmark character, for mask
-        self.PAD_CHAR = "\u25A1" # the empty square character, for pad
+        self.MASK_CHAR = "\u2047"  # the doublequestionmark character, for mask
+        self.PAD_CHAR = "\u25A1"  # the empty square character, for pad
 
         chars = list(sorted(list(set(data))))
         assert self.MASK_CHAR not in chars
@@ -16,8 +16,8 @@ class CharCorruptionDataset(Dataset):
         chars.insert(0, self.MASK_CHAR)
         chars.insert(0, self.PAD_CHAR)
 
-        self.stoi = {ch:i for i,ch in enumerate(chars)}
-        self.itos = {i:ch for i,ch in enumerate(chars)}
+        self.stoi = {ch: i for i, ch in enumerate(chars)}
+        self.itos = {i: ch for i, ch in enumerate(chars)}
 
         data_size, vocab_size = len(data), len(chars)
         print(f'data has {data_size} characters, {vocab_size} unique.')
@@ -43,7 +43,8 @@ class CharCorruptionDataset(Dataset):
         masked_content = truncated_doc[mask_start:mask_start+masked_length]
         suffix = truncated_doc[mask_start+masked_length:]
 
-        masked_string = prefix + self.MASK_CHAR + suffix + self.MASK_CHAR + masked_content
+        masked_string = prefix + self.MASK_CHAR + \
+            suffix + self.MASK_CHAR + masked_content
         padding = self.PAD_CHAR * (self.block_size + 1 - len(masked_string))
         masked_string = masked_string + padding
 
@@ -56,57 +57,25 @@ class CharCorruptionDataset(Dataset):
         return x, y
 
 
-class NameDataset(Dataset):
-    def __init__(self, pretraining_dataset, data):
-        self.MASK_CHAR = "\u2047" # the doublequestionmark character, for mask
-        self.PAD_CHAR = "\u25A1" # the empty square character, for pad
-        self.itos = pretraining_dataset.itos
-        self.stoi = pretraining_dataset.stoi
-        self.block_size = pretraining_dataset.block_size
-        self.data = list(data.encode('utf-8').decode('ascii', errors='ignore').split('\n'))
+def split_data(data, valid_size=0.1, test_size=0.1):
+    n = len(data)
+    valid_size = int(valid_size * n)
+    test_size = int(test_size * n)
 
-    def __len__(self):
-        return len(self.data) - 1
+    train_data = data[:-valid_size-test_size]
+    valid_data = data[-valid_size-test_size:-test_size]
+    test_data = data[-test_size:]
 
-    def __getitem__(self, idx):
-        inp, oup = self.data[idx].split('\t')
-        x = inp + self.MASK_CHAR + oup + self.MASK_CHAR
-        x = x + self.PAD_CHAR*(self.block_size - len(x))
-        y = self.PAD_CHAR*(len(inp)-1) + x[len(inp):]
-
-        x = x[:-1]
-        x = torch.tensor([self.stoi[c] for c in x], dtype=torch.long)
-        y = torch.tensor([self.stoi[c] for c in y], dtype=torch.long)
-        return x, y
+    return train_data, valid_data, test_data
 
 
-# Code below is strictly for your debugging purposes; feel free to modify
-# as desired.
+if __name__ is "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_path", type=str, required=True)
+    parser.add_argument("--block_size", type=int, default=256)
+    args = parser.parse_args()
 
-if __name__ == '__main__':
-    argp = argparse.ArgumentParser()
-    argp.add_argument('dataset_type', help="Type of dataset to sample from."
-            "Options: namedata, charcorruption.",
-            choices=["namedata", "charcorruption"])
-    args = argp.parse_args()
-
-    if args.dataset_type == 'namedata':
-        # Even if it hasn't been implemented, we use it to define the vocab
-        corruption_dataset = CharCorruptionDataset(
-            open('wiki.txt', encoding='utf-8').read(), 128)
-        # Make the name dataset
-        name_dataset = NameDataset(corruption_dataset,
-            open('birth_places_train.tsv', encoding='utf-8').read())
-        for _, example in zip(range(4), name_dataset):
-            x, y = example
-            print('x:', ''.join([name_dataset.itos[int(c)] for c in x]))
-            print('y:', ''.join([name_dataset.itos[int(c)] for c in y]))
-    elif args.dataset_type == 'charcorruption':
-        corruption_dataset = CharCorruptionDataset(
-            open('wiki.txt', encoding='utf-8').read(), 128)
-        for _, example in zip(range(4), corruption_dataset):
-            x, y = example
-            print('x:', ''.join([corruption_dataset.itos[int(c)] for c in x]))
-            print('y:', ''.join([corruption_dataset.itos[int(c)] for c in y]))
-    else:
-        raise ValueError(f"Unknown dataset type in command line args: {args.dataset_type}")
+    with open(args.data_path, 'r', encoding='utf-8') as f:
+        text = f.read()
+    train_data, valid_data, test_data = split_data(
+        text, valid_size=0.1, test_size=0.1)
