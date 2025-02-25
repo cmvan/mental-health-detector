@@ -16,8 +16,8 @@ argp = argparse.ArgumentParser()
 argp.add_argument('function', help="Choose pretrain, finetune, or evaluate")
 argp.add_argument('variant', help="Choose vanilla or rope")
 argp.add_argument('pretrain_corpus_path', default=None)
-argp.add_argument('--reading_params_path',default=None)
-argp.add_argument('--writing_params_path',default=None)
+argp.add_argument('--reading_params_path', default=None)
+argp.add_argument('--writing_params_path', default=None)
 argp.add_argument('--finetune_corpus_path', default=None)
 argp.add_argument('--eval_corpus_path', default=None)
 argp.add_argument('--outputs_path', default=None)
@@ -44,7 +44,7 @@ writer = SummaryWriter(log_dir='expt/%s/%s_%s_pt_lr_%f_ft_lr_%f' % (
 
 block_size = 128
 text = open(args.pretrain_corpus_path, encoding='utf-8').read()
-pretrain_dataset = dataset.CharCorruptionDataset(text, block_size)
+pretrain_dataset = dataset.CrisisDataset(text, block_size)
 
 
 mconf = models.GPTConfig(
@@ -53,9 +53,6 @@ mconf = models.GPTConfig(
     n_layer=4,
     n_head=8,
     n_embd=256)
-
-# define models.
-# note: models should moved to device defined on lines 30-34.
 
 model = None
 if args.variant == 'vanilla':
@@ -83,7 +80,8 @@ if args.function == 'pretrain':
         num_workers=4,
         writer=writer,
     )
-    pretrain = trainer.Trainer(model, pretrain_dataset, test_dataset=None, config=ptrainconfig)
+    pretrain = trainer.Trainer(
+        model, pretrain_dataset, test_dataset=None, config=ptrainconfig)
     pretrain.train()
     torch.save(model.state_dict(), args.writing_params_path)
 elif args.function == 'finetune':
@@ -115,7 +113,8 @@ elif args.function == 'finetune':
             num_workers=4,
             writer=writer,
         )
-    finetrain = trainer.Trainer(model, fine_data, test_dataset=None, config=trainconfig)
+    finetrain = trainer.Trainer(
+        model, fine_data, test_dataset=None, config=trainconfig)
     finetrain.train()
     torch.save(model.state_dict(), args.writing_params_path)
 elif args.function == 'evaluate':
@@ -125,20 +124,23 @@ elif args.function == 'evaluate':
     model.load_state_dict(torch.load(args.reading_params_path))
     correct = 0
     total = 0
+    # TODO: adapt to crisis dataset
     with open(args.outputs_path, 'w', encoding='utf-8') as fout:
         predictions = []
         for line in tqdm(open(args.eval_corpus_path, encoding='utf-8')):
             x = line.split('\t')[0]
             x = x + '⁇'
             x = torch.tensor([pretrain_dataset.stoi[s] for s in x],
-                             dtype=torch.long)[None,...].to(device)
+                             dtype=torch.long)[None, ...].to(device)
             pred = utils.sample(model, x, 32, sample=False)[0]
             completion = ''.join([pretrain_dataset.itos[int(i)] for i in pred])
             pred = completion.split('⁇')[1]
             predictions.append(pred)
             fout.write(pred + '\n')
-        total, correct = utils.evaluate_places(args.eval_corpus_path, predictions)
+        total, correct = utils.evaluate_places(
+            args.eval_corpus_path, predictions)
     if total > 0:
         print(f'Correct: {correct} out of {total}: {correct/total*100}%')
     else:
-        print(f'Predictions written to {args.outputs_path}; no targets provided')
+        print(
+            f'Predictions written to {args.outputs_path}; no targets provided')
