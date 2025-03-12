@@ -84,7 +84,7 @@ def encode_labels(train_df, test_df):
     return y_train, y_test
 
 
-def evaluate_model(y_test, y_pred):
+def evaluate_model(y_test, y_pred, model):
     """
     Evaluate the performance of the model.
 
@@ -119,10 +119,10 @@ def evaluate_model(y_test, y_pred):
     print("------------------------")
     pprint.pprint(classification_report_dict)
 
-    plot_confusion_matrix(cm)
+    plot_confusion_matrix(cm, model)
 
 
-def plot_confusion_matrix(cm):
+def plot_confusion_matrix(cm, model: str):
     """
     Plot the confusion matrix of the test labels and predicted labels.
 
@@ -135,7 +135,7 @@ def plot_confusion_matrix(cm):
     """
     plt.figure(figsize=(8, 6))
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title('Confusion Matrix')
+    plt.title(f'{model} Confusion Matrix')
     plt.colorbar()
 
     tick_marks = np.arange(2)
@@ -153,4 +153,4 @@ def plot_confusion_matrix(cm):
     plt.ylabel('True Labels')
     plt.xlabel('Predicted Labels')
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"{model.lower()}_confusion_matrix.png")
