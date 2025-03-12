@@ -66,7 +66,7 @@ def train_and_evaluate_svm(X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu):
     y_pred_cpu = y_pred_gpu.get()
     y_test_cpu = y_test_gpu.get()
 
-    utils.evaluate_model(y_test_cpu, y_pred_cpu)
+    utils.evaluate_model(y_test_cpu, y_pred_cpu, "SVM")
 
     # Clean up GPU memory
     del svm_gpu
