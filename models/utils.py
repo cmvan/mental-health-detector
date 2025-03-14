@@ -114,8 +114,35 @@ def move_to_gpu(X_train, X_test, y_train, y_test):
     )
 
 
+def move_to_gpu(X_train, X_test, y_train, y_test):
+    """
+    Transfers input data arrays to GPU memory using CuPy.
 
-def evaluate_model(y_test, y_pred):
+    Parameters
+    ----------
+    X_train : array-like
+        Training features to be transferred to GPU.
+    X_test : array-like
+        Test features to be transferred to GPU.
+    y_train : array-like
+        Training labels to be transferred to GPU.
+    y_test : array-like
+        Test labels to be transferred to GPU.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the GPU arrays: (X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu).
+    """
+    return (
+        cp.asarray(X_train, dtype=cp.float32),
+        cp.asarray(X_test, dtype=cp.float32),
+        cp.asarray(y_train, dtype=cp.int32),
+        cp.asarray(y_test, dtype=cp.int32),
+    )
+
+
+def evaluate_model(y_test, y_pred, model):
     """
     Evaluate the performance of the model.
 
@@ -150,10 +177,10 @@ def evaluate_model(y_test, y_pred):
     print("------------------------")
     pprint.pprint(classification_report_dict)
 
-    plot_confusion_matrix(cm)
+    plot_confusion_matrix(cm, model)
 
 
-def plot_confusion_matrix(cm):
+def plot_confusion_matrix(cm, model: str):
     """
     Plot the confusion matrix of the test labels and predicted labels.
 
@@ -166,7 +193,7 @@ def plot_confusion_matrix(cm):
     """
     plt.figure(figsize=(8, 6))
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title('Confusion Matrix')
+    plt.title(f'{model} Confusion Matrix')
     plt.colorbar()
 
     tick_marks = np.arange(2)
@@ -184,4 +211,5 @@ def plot_confusion_matrix(cm):
     plt.ylabel('True Labels')
     plt.xlabel('Predicted Labels')
     plt.tight_layout()
-    plt.show()
+    filename = "_".join(model.lower().split(' '))
+    plt.savefig(f"{filename}_confusion_matrix.png")
