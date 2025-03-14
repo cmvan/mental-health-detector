@@ -15,4 +15,4 @@ if __name__ == "__main__":
     y_pred = rf_classifier.predict(X_test)
 
     # Evaluation
-    utils.evaluate_model(y_test, y_pred)
+    utils.evaluate_model(y_test, y_pred, "Random Forest")
