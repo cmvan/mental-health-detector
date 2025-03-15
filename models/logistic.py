@@ -5,20 +5,6 @@ from cuml.linear_model import LogisticRegression
 from cuml.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
 
-def move_to_gpu(X_train, X_test, y_train, y_test):
-    """
-    Transfers input data arrays to GPU memory using CuPy.
-
-    Returns
-    -------
-    tuple of GPU arrays: (X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu)
-    """
-    return (
-        cp.asarray(X_train, dtype=cp.float32),
-        cp.asarray(X_test, dtype=cp.float32),
-        cp.asarray(y_train, dtype=cp.int32),
-        cp.asarray(y_test, dtype=cp.int32),
-    )
 
 if __name__ == "__main__":
     # Load data
@@ -27,7 +13,7 @@ if __name__ == "__main__":
     y_train, y_test = utils.encode_labels(train_df, test_df)
 
     # Move to GPU
-    X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu = move_to_gpu(
+    X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu = utils.move_to_gpu(
         X_train, X_test, y_train, y_test
     )
 
