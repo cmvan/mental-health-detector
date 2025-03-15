@@ -16,35 +16,32 @@ def contains_crisis_term(text, crisis_terms):
     return any(term in text_lower for term in crisis_terms)
 
 
+def filter_crisis_terms(classify_text, input, output):
+    chunk_size = 10000
+    chunks = []
+    for chunk in pd.read_csv(input, chunksize=chunk_size):
+        if "text" in chunk.columns:
+            chunk["classification"] = chunk["text"].apply(classify_text)
+            chunks.append(chunk)
+    res_df = pd.concat(chunks, ignore_index=True)
+    res_df.to_csv(output, index=False)
+    return res_df
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--crisis_terms", type=str, required=True)
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
     args = parser.parse_args()
+    crisis_terms_file = args.crisis_terms
+    input = args.input
+    output = args.output
 
-    # Load crisis terms
-    crisis_terms = load_crisis_terms(args.crisis_terms)
+    res_df = filter_crisis_terms(classify_text, input, output)
 
-    chunk_size = 10000  # Adjust based on memory constraints
-    filtered_chunks = []
+    print("Classification completed. First few rows of output:")
+    print(res_df.head())
 
-    # Process CSV in chunks, filtering out non-matching rows
-    for chunk in pd.read_csv(args.input, sep="\t", names=["text", "class"], chunksize=chunk_size):
-        if "text" in chunk.columns:
-            # Keep only rows where the text contains a crisis term
-            filtered_chunk = chunk[chunk["text"].apply(lambda x: contains_crisis_term(x, crisis_terms))]
-
-            # Append only non-empty chunks
-            if not filtered_chunk.empty:
-                filtered_chunks.append(filtered_chunk)
-
-    # Combine all filtered chunks into a single dataframe
-    if filtered_chunks:
-        filtered_res_df = pd.concat(filtered_chunks, ignore_index=True)
-        filtered_res_df.to_csv(args.output, index=False)
-        print(f"Filtered crisis-only data saved to {args.output}")
-    else:
-        print("No matching rows found. Empty output file generated.")
-
-    print("Processing complete.")
+    y_true, y_pred = res_df['class'], res_df['classification']
+    utils.evaluate_model(y_true, y_pred)
