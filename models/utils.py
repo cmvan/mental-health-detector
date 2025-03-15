@@ -153,4 +153,4 @@ def plot_confusion_matrix(cm, model: str):
     plt.ylabel('True Labels')
     plt.xlabel('Predicted Labels')
     plt.tight_layout()
-    plt.savefig(f"{"".join(model.split('_'))}_confusion_matrix.png")
+    plt.savefig(f"{''.join(model.split('_'))}_confusion_matrix.png")
