@@ -6,6 +6,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import os
 import pprint
+import cupy as cp
+
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -84,6 +86,62 @@ def encode_labels(train_df, test_df):
     return y_train, y_test
 
 
+def move_to_gpu(X_train, X_test, y_train, y_test):
+    """
+    Transfers input data arrays to GPU memory using CuPy.
+
+    Parameters
+    ----------
+    X_train : array-like
+        Training features to be transferred to GPU.
+    X_test : array-like
+        Test features to be transferred to GPU.
+    y_train : array-like
+        Training labels to be transferred to GPU.
+    y_test : array-like
+        Test labels to be transferred to GPU.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the GPU arrays: (X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu).
+    """
+    return (
+        cp.asarray(X_train, dtype=cp.float32),
+        cp.asarray(X_test, dtype=cp.float32),
+        cp.asarray(y_train, dtype=cp.int32),
+        cp.asarray(y_test, dtype=cp.int32),
+    )
+
+
+def move_to_gpu(X_train, X_test, y_train, y_test):
+    """
+    Transfers input data arrays to GPU memory using CuPy.
+
+    Parameters
+    ----------
+    X_train : array-like
+        Training features to be transferred to GPU.
+    X_test : array-like
+        Test features to be transferred to GPU.
+    y_train : array-like
+        Training labels to be transferred to GPU.
+    y_test : array-like
+        Test labels to be transferred to GPU.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the GPU arrays: (X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu).
+    """
+    return (
+        cp.asarray(X_train, dtype=cp.float32),
+        cp.asarray(X_test, dtype=cp.float32),
+        cp.asarray(y_train, dtype=cp.int32),
+        cp.asarray(y_test, dtype=cp.int32),
+    )
+
+
 def evaluate_model(y_test, y_pred, model):
     """
     Evaluate the performance of the model.
@@ -153,4 +211,5 @@ def plot_confusion_matrix(cm, model: str):
     plt.ylabel('True Labels')
     plt.xlabel('Predicted Labels')
     plt.tight_layout()
-    plt.savefig(f"{''.join(model.split('_'))}_confusion_matrix.png")
+    filename = "_".join(model.lower().split(' '))
+    plt.savefig(f"{filename}_confusion_matrix.png")
