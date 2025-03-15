@@ -3,34 +3,6 @@ from cuml.svm import SVC as cumlSVC
 import utils
 
 
-def move_to_gpu(X_train, X_test, y_train, y_test):
-    """
-    Transfers input data arrays to GPU memory using CuPy.
-
-    Parameters
-    ----------
-    X_train : array-like
-        Training features to be transferred to GPU.
-    X_test : array-like
-        Test features to be transferred to GPU.
-    y_train : array-like
-        Training labels to be transferred to GPU.
-    y_test : array-like
-        Test labels to be transferred to GPU.
-
-    Returns
-    -------
-    tuple
-        A tuple containing the GPU arrays: (X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu).
-    """
-    return (
-        cp.asarray(X_train, dtype=cp.float32),
-        cp.asarray(X_test, dtype=cp.float32),
-        cp.asarray(y_train, dtype=cp.int32),
-        cp.asarray(y_test, dtype=cp.int32),
-    )
-
-
 def train_and_evaluate_svm(X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu):
     """
     Train and evaluate a Support Vector Machine (SVM) classifier on GPU.
@@ -77,7 +49,7 @@ if __name__ == "__main__":
     train_df, test_df = utils.load_data()
     X_train, X_test = utils.preprocess_text(train_df, test_df)
     y_train, y_test = utils.encode_labels(train_df, test_df)
-    X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu = move_to_gpu(
+    X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu = utils.move_to_gpu(
         X_train, X_test, y_train, y_test)
 
     train_and_evaluate_svm(X_train_gpu, X_test_gpu, y_train_gpu, y_test_gpu)
